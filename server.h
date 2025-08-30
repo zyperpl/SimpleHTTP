@@ -68,7 +68,7 @@ typedef struct Server
   ServerEndpoints endpoints;
 } Server;
 
-SERVER_API void server_init(Server *server, int port);
+SERVER_API int server_init(Server *server, int port);
 SERVER_API void server_endpoint(Server *server, const char *path, void (*handler)(Client *));
 SERVER_API void server_response(Client *client, int code, const char *response);
 SERVER_API void server_cleanup(Server *server);

@@ -1,5 +1,6 @@
-#include "server.h"
 #include <stdio.h>
+
+#include "server.h"
 
 void endpoint_hello(Client *client)
 {
@@ -29,7 +30,8 @@ void endpoint_value(Client *client)
 int main(void)
 {
   Server server;
-  server_init(&server, 8000);
+  if (server_init(&server, 8000) < 0)
+    return 1;
   server_endpoint(&server, "/hello", endpoint_hello);
   server_endpoint(&server, "/value/%d", endpoint_value);
   return server_run(&server);
