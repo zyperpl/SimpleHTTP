@@ -65,14 +65,45 @@ void server_endpoint(Server *server, const char *path, void (*handler)(Client *)
 
 void server_response(Client *client, int code, const char *response)
 {
+  const char *status_text = "Internal Server Error";
+  switch (code)
+  {
+    case 200:
+      status_text = "OK";
+      break;
+    case 400:
+      status_text = "Bad Request";
+      break;
+    case 401:
+      status_text = "Unauthorized";
+      break;
+    case 403:
+      status_text = "Forbidden";
+      break;
+    case 404:
+      status_text = "Not Found";
+      break;
+    default:
+      if (code >= 100 && code < 200)
+        status_text = "Informational";
+      else if (code >= 200 && code < 300)
+        status_text = "Success";
+      else if (code >= 300 && code < 400)
+        status_text = "Redirection";
+      else if (code >= 400 && code < 500)
+        status_text = "Client Error";
+      break;
+  }
+
   char buffer[1024];
   int length = sprintf(buffer,
-                       "HTTP/1.1 %d OK\r\n"
+                       "HTTP/1.1 %d %s\r\n"
                        "Content-Length: %u\r\n"
                        "Content-Type: text/plain\r\n"
                        "\r\n"
                        "%s",
                        code,
+                       status_text,
                        (unsigned int)strlen(response),
                        response);
   send(client->socket, buffer, length, 0);
@@ -197,7 +228,12 @@ int server_run(Server *server)
     }
     buffer[received] = '\0';
 
-    sscanf(buffer, "%15s %255s", method, path);
+    if (sscanf(buffer, "%15s %255s", method, path) != 2)
+    {
+      server_response(&client, 400, "Bad Request\n");
+      close(client.socket);
+      continue;
+    }
 
     printf("Received request %s %s\n", method, path);
 
