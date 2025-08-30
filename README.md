@@ -1,6 +1,6 @@
 # SimpleHTTP
 
-Lightweight HTTP server library in C99.
+Lightweight single-file C99 HTTP server library for fast integration and endpoint-based code execution.
 
 ## Features
 
