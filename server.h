@@ -1,6 +1,11 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
@@ -73,5 +78,9 @@ SERVER_API void server_endpoint(Server *server, const char *path, void (*handler
 SERVER_API void server_response(Client *client, int code, const char *response);
 SERVER_API void server_cleanup(Server *server);
 SERVER_API int server_run(Server *server);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
