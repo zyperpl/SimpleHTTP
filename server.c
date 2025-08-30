@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 void server_init(Server *server, int port)
 {
@@ -96,17 +97,25 @@ void server_response(Client *client, int code, const char *response)
   }
 
   char buffer[1024];
-  int length = sprintf(buffer,
-                       "HTTP/1.1 %d %s\r\n"
-                       "Content-Length: %u\r\n"
-                       "Content-Type: text/plain\r\n"
-                       "\r\n"
-                       "%s",
-                       code,
-                       status_text,
-                       (unsigned int)strlen(response),
-                       response);
-  send(client->socket, buffer, length, 0);
+  int length = snprintf(buffer,
+                        sizeof(buffer),
+                        "HTTP/1.1 %d %s\r\n"
+                        "Content-Length: %u\r\n"
+                        "Content-Type: text/plain\r\n"
+                        "\r\n"
+                        "%s",
+                        code,
+                        status_text,
+                        (unsigned int)strlen(response),
+                        response);
+  if ((unsigned long)length >= sizeof(buffer))
+  {
+    return;
+  }
+  if (send(client->socket, buffer, length, 0) < 0)
+  {
+    perror("send");
+  }
 }
 
 void server_cleanup(Server *server)
@@ -219,12 +228,17 @@ int server_run(Server *server)
       break;
     }
 
+    struct timeval timeout = { 30, 0 };
+    setsockopt(client.socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
     ssize_t received = recv(client.socket, buffer, sizeof(buffer) - 1, 0);
-    if (received < 0)
+    if (received <= 0)
     {
-      perror("recv");
-      ret = received;
-      break;
+      if (received < 0)
+        perror("recv");
+
+      close(client.socket);
+      continue;
     }
     buffer[received] = '\0';
 
