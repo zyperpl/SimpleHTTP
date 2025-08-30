@@ -92,7 +92,7 @@ void server_cleanup(Server *server)
   }
 }
 
-static int match_path(const char *format, const char *path, Values *values)
+int server_match_path(const char *format, const char *path, Values *values)
 {
   if (!values || !values->arr)
     return 0;
@@ -139,9 +139,8 @@ static int match_path(const char *format, const char *path, Values *values)
       {
         values->arr[values->count].type = SERVER_VALUE_STRING;
         int len                         = 0;
-        char next                       = (f[1] && f[1] != '%') ? f[1] : '/';
         int max_len                     = sizeof(values->arr[values->count].value.s) - 1;
-        while (*p && *p != next && len < max_len)
+        while (*p && *p != '/' && len < max_len)
         {
           values->arr[values->count].value.s[len++] = *p++;
         }
@@ -200,7 +199,7 @@ int server_run(Server *server)
 
     sscanf(buffer, "%15s %255s", method, path);
 
-    printf("Received request: %s %s\n", method, path);
+    printf("Received request %s %s\n", method, path);
 
     Value values[10];
     client.values.arr      = values;
@@ -210,14 +209,8 @@ int server_run(Server *server)
     int handled = 0;
     for (int i = 0; i < server->endpoints.count; i++)
     {
-      if (strcmp(server->endpoints.endpoints[i].path, path) == 0)
-      {
-        server->endpoints.endpoints[i].handler(&client);
-        handled = 1;
-        break;
-      }
-
-      if (match_path(server->endpoints.endpoints[i].path, path, &client.values))
+      if (strcmp(server->endpoints.endpoints[i].path, path) == 0 ||
+          server_match_path(server->endpoints.endpoints[i].path, path, &client.values))
       {
         server->endpoints.endpoints[i].handler(&client);
         handled = 1;
