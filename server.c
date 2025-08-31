@@ -99,12 +99,11 @@ void server_response(Client *client, int code, const char *response)
       break;
   }
 
-  char buffer[1024];
+  char buffer[4096];
   int length = snprintf(buffer,
                         sizeof(buffer),
                         "HTTP/1.1 %d %s\r\n"
                         "Content-Length: %u\r\n"
-                        "Content-Type: text/plain\r\n"
                         "\r\n"
                         "%s",
                         code,
@@ -113,12 +112,11 @@ void server_response(Client *client, int code, const char *response)
                         response);
   if ((unsigned long)length >= sizeof(buffer))
   {
+    fprintf(stderr, "Response too large to send (%d > %lu)\n", length, (long unsigned)sizeof(buffer));
     return;
   }
   if (send(client->socket, buffer, length, 0) < 0)
-  {
     perror("send");
-  }
 }
 
 void server_cleanup(Server *server)
